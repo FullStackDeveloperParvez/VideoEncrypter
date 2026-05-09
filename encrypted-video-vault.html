@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultPlay — Encrypted Video Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #c9a227;
+    --gold-dim: #7a600f;
+    --gold-glow: rgba(201,162,39,0.15);
+    --bg: #0a0a0b;
+    --bg2: #111114;
+    --bg3: #18181d;
+    --surface: #1e1e25;
+    --surface2: #26262f;
+    --border: rgba(201,162,39,0.2);
+    --border-bright: rgba(201,162,39,0.5);
+    --text: #e8e4d9;
+    --text-dim: #8a8478;
+    --text-faint: #4a4840;
+    --danger: #e05050;
+    --success: #4caf78;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; transform: rotate(45deg);
+  }
+  .logo-icon::after {
+    content: '';
+    width: 14px; height: 14px;
+    background: var(--gold);
+    display: block;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .logo-text {
+    font-family: var(--cond);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 1.5px;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+  }
+
+  /* ── TAB NAV ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 0 40px;
+  }
+  .tab {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 16px 24px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ── MAIN ── */
+  main { flex: 1; padding: 40px; max-width: 960px; width: 100%; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 1px dashed var(--border-bright);
+    background: var(--bg3);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { background: var(--gold-glow); border-color: var(--gold); }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    width: 48px; height: 48px; margin: 0 auto 16px;
+    border: 1.5px solid var(--gold-dim);
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(45deg);
+  }
+  .upload-icon svg { transform: rotate(-45deg); }
+  .upload-title { font-family: var(--cond); font-size: 18px; letter-spacing: 1px; color: var(--text); margin-bottom: 8px; }
+  .upload-hint { font-size: 13px; color: var(--text-dim); font-family: var(--mono); }
+  .file-chosen {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--gold);
+    background: var(--gold-glow);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    text-align: left;
+    word-break: break-all;
+    display: none;
+  }
+
+  /* ── KEY INPUT ── */
+  .field-label { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; }
+  .key-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+    letter-spacing: 1px;
+    transition: border-color 0.2s;
+  }
+  .key-input:focus { border-color: var(--gold); }
+  .key-input::placeholder { color: var(--text-faint); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: #0a0a0b;
+  }
+  .btn-primary:hover { background: #dbb835; }
+  .btn-primary:disabled { background: var(--surface2); color: var(--text-faint); cursor: not-allowed; }
+  .btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--border-bright);
+  }
+  .btn-outline:hover { background: var(--gold-glow); }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { margin-top: 24px; display: none; }
+  .progress-label { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .progress-track { height: 3px; background: var(--surface2); position: relative; }
+  .progress-bar { height: 100%; background: var(--gold); width: 0%; transition: width 0.1s; }
+
+  /* ── STATUS ── */
+  .status-msg {
+    margin-top: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 12px 16px;
+    border-left: 3px solid;
+    display: none;
+  }
+  .status-msg.success { border-color: var(--success); color: var(--success); background: rgba(76,175,120,0.08); }
+  .status-msg.error { border-color: var(--danger); color: var(--danger); background: rgba(224,80,80,0.08); }
+  .status-msg.info { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+
+  /* ── KEY DISPLAY ── */
+  .key-display {
+    margin-top: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 20px;
+    display: none;
+  }
+  .key-display .kd-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 8px; }
+  .key-display .kd-value { font-family: var(--mono); font-size: 13px; color: var(--gold); word-break: break-all; line-height: 1.6; }
+  .key-display .kd-warn { font-size: 11px; color: var(--danger); margin-top: 12px; font-family: var(--mono); letter-spacing: 0.5px; }
+  .key-actions { display: flex; gap: 12px; margin-top: 12px; }
+
+  /* ── DOWNLOAD LIST ── */
+  .dl-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .dl-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 18px;
+  }
+  .dl-item-info { display: flex; align-items: center; gap: 14px; }
+  .dl-badge { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; padding: 3px 8px; background: var(--gold-glow); color: var(--gold); border: 1px solid var(--border); }
+  .dl-name { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .dl-size { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); }
+
+  /* ── VIDEO PLAYER ── */
+  .player-shell {
+    background: #000;
+    border: 1px solid var(--border);
+    position: relative;
+    display: none;
+    margin-top: 24px;
+  }
+  #videoEl {
+    width: 100%;
+    display: block;
+    background: #000;
+    max-height: 480px;
+    cursor: pointer;
+  }
+  .controls {
+    background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 70%, transparent 100%);
+    padding: 12px 18px 16px;
+    position: relative;
+  }
+
+  /* Progress / seek */
+  .seek-area { position: relative; margin-bottom: 14px; cursor: pointer; height: 4px; }
+  .seek-track { height: 4px; background: var(--surface2); border-radius: 2px; position: relative; overflow: visible; }
+  .seek-buffered { position: absolute; top: 0; left: 0; height: 100%; background: var(--surface2); border-radius: 2px; }
+  .seek-filled { position: absolute; top: 0; left: 0; height: 100%; background: var(--gold); border-radius: 2px; transition: none; }
+  .seek-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 14px; height: 14px; background: var(--gold);
+    border-radius: 50%; border: 2px solid #fff;
+    pointer-events: none; left: 0%;
+    transition: transform 0.1s;
+  }
+  .seek-area:hover .seek-thumb { transform: translate(-50%, -50%) scale(1.3); }
+
+  /* Time tooltip */
+  .seek-tooltip {
+    position: absolute; bottom: 20px;
+    background: rgba(0,0,0,0.85); color: var(--gold);
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 8px; pointer-events: none;
+    transform: translateX(-50%); white-space: nowrap;
+    display: none; border: 1px solid var(--border);
+  }
+
+  /* Control row */
+  .ctrl-row { display: flex; align-items: center; gap: 6px; }
+  .ctrl-btn {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; color: var(--text); border-radius: 2px;
+    transition: color 0.15s, background 0.15s; flex-shrink: 0;
+  }
+  .ctrl-btn:hover { color: var(--gold); background: rgba(255,255,255,0.05); }
+  .ctrl-btn svg { width: 18px; height: 18px; fill: currentColor; }
+  .ctrl-btn.play-btn svg { width: 22px; height: 22px; }
+
+  /* Volume */
+  .vol-group { display: flex; align-items: center; gap: 6px; }
+  .vol-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 80px; height: 3px; background: var(--surface2);
+    outline: none; border-radius: 2px; cursor: pointer;
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--gold); cursor: pointer;
+  }
+  .vol-slider::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); border: none; cursor: pointer; }
+
+  /* Time display */
+  .time-display { font-family: var(--mono); font-size: 12px; color: var(--text-dim); padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
+
+  /* Speed */
+  .speed-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+    color: var(--text-dim); background: none; border: 1px solid transparent;
+    padding: 4px 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .speed-btn:hover { color: var(--gold); border-color: var(--border); }
+
+  /* Spacer */
+  .ctrl-spacer { flex: 1; }
+
+  /* Quality / title overlay */
+  .video-overlay-top {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 12px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .video-title { font-family: var(--cond); font-size: 13px; letter-spacing: 2px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+  .enc-badge { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--gold); border: 1px solid rgba(201,162,39,0.4); padding: 3px 8px; background: rgba(0,0,0,0.5); }
+
+  /* Grid helper */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .field-group { margin-bottom: 20px; }
+  .row-gap { display: flex; gap: 12px; align-items: flex-start; margin-top: 24px; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+  /* Decrypting overlay */
+  .decrypt-overlay {
+    position: absolute; inset: 0;
+    background: rgba(10,10,11,0.92);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; z-index: 10;
+  }
+  .decrypt-spinner {
+    width: 48px; height: 48px; border: 2px solid var(--border);
+    border-top-color: var(--gold); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .decrypt-label { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; color: var(--gold); }
+
+  /* Full screen support */
+  .player-shell:-webkit-full-screen { max-width: 100%; }
+  .player-shell:-webkit-full-screen #videoEl { max-height: 100vh; }
+
+  /* Tooltips for buttons */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); color: var(--gold); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+    padding: 4px 8px; white-space: nowrap; pointer-events: none; z-index: 99;
+  }
+
+  /* Chapter / thumbnail strip (decorative) */
+  .info-strip {
+    display: flex; align-items: center; gap: 24px;
+    background: var(--bg2); border: 1px solid var(--border); border-top: none;
+    padding: 12px 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  }
+  .info-item { display: flex; align-items: center; gap: 6px; }
+  .info-dot { width: 6px; height: 6px; background: var(--gold); }
+
+  scrollbar-width: thin;
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg2); } ::-webkit-scrollbar-thumb { background: var(--surface2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">VaultPlay</div>
+      <div class="logo-sub">AES-256-GCM · Client-Side Encryption</div>
+    </div>
+  </div>
+  <div class="header-badge">SECURE VIDEO SYSTEM</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('encrypt')">① Encrypt Video</button>
+  <button class="tab" onclick="switchTab('play')">② Play Encrypted</button>
+</div>
+
+<main>
+
+  <!-- ══ ENCRYPT PANEL ══ -->
+  <div id="panel-encrypt" class="panel active">
+    <div class="section-label">Step 1 — Select MP4 File</div>
+
+    <div class="upload-zone" id="encDropZone">
+      <input type="file" id="encFileInput" accept="video/mp4,.mp4" onchange="handleEncFile(this)">
+      <div class="upload-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#c9a227" stroke-width="1.5" width="22" height="22">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="12" x2="12" y2="18"/>
+          <polyline points="9 15 12 12 15 15"/>
+        </svg>
+      </div>
+      <div class="upload-title">Drop MP4 Here</div>
+      <div class="upload-hint">or click to browse · .mp4 files only</div>
+    </div>
+    <div class="file-chosen" id="encFileName"></div>
+
+    <div class="divider"></div>
+    <div class="section-label">Step 2 — Encryption Key (optional)</div>
+
+    <div class="field-group">
+      <div class="field-label">Custom passphrase — leave blank to auto-generate a 256-bit key</div>
+      <input class="key-input" type="password" id="encPassInput" placeholder="Enter custom passphrase or leave blank…">
+    </div>
+
+    <div class="row-gap">
+      <button class="btn btn-primary" id="encBtn" onclick="doEncrypt()" disabled>
+        Encrypt &amp; Export
+      </button>
+      <button class="btn btn-outline" onclick="document.getElementById('encFileInput').value=''; document.getElementById('encFileName').style.display='none'; document.getElementById('encBtn').disabled=true; hideStatus('encStatus'); document.getElementById('keyDisplay').style.display='none'; document.getElementById('dlList').style.display='none';">
+        Reset
+      </button>
+    </div>
+
+    <div class="progress-wrap" id="encProgress">
+      <div class="progress-label"><span id="encProgressLabel">Encrypting…</span><span id="encProgressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-bar" id="encProgressBar"></div></div>
+    </div>
+
+    <div class="status-msg" id="encStatus"></div>
+
+    <div class="key-display" id="keyDisplay">
+      <div class="kd-label">Encryption Key (Base64-encoded)</div>
+      <div class="kd-value" id="keyValue"></div>
+      <div class="kd-warn">⚠ Save this key. Without it, your video cannot be decrypted.</div>
+      <div class="key-actions">
+        <button class="btn btn-outline" style="padding:10px 20px; font-size:12px;" onclick="copyKey()">Copy Key</button>
+        <button class="btn btn-outline" style="padding:10px 20px; font-size:12px;" onclick="downloadKey()">Download Key File</button>
+      </div>
+    </div>
+
+    <div class="dl-list" id="dlList" style="display:none"></div>
+  </div>
+
+  <!-- ══ PLAY PANEL ══ -->
+  <div id="panel-play" class="panel">
+    <div class="section-label">Load Encrypted Video</div>
+
+    <div class="two-col">
+      <div>
+        <div class="field-label">Encrypted File (.encvid)</div>
+        <div class="upload-zone" style="padding:30px 20px;" id="playDropZone">
+          <input type="file" id="playFileInput" accept=".encvid" onchange="handlePlayFile(this)">
+          <div class="upload-title" style="font-size:15px;">Select .encvid File</div>
+          <div class="upload-hint">Encrypted video container</div>
+        </div>
+        <div class="file-chosen" id="playFileName"></div>
+      </div>
+      <div>
+        <div class="field-label">Decryption Key</div>
+        <div class="upload-zone" style="padding:30px 20px; margin-bottom:12px;" id="keyDropZone">
+          <input type="file" id="keyFileInput" accept=".vaultkey" onchange="handleKeyFile(this)">
+          <div class="upload-title" style="font-size:15px;">Load Key File</div>
+          <div class="upload-hint">.vaultkey file</div>
+        </div>
+        <div class="field-label" style="margin-top:4px;">Or paste key manually</div>
+        <input class="key-input" type="text" id="playKeyInput" placeholder="Paste Base64 key or passphrase…">
+      </div>
+    </div>
+
+    <div class="row-gap" style="margin-top:20px;">
+      <button class="btn btn-primary" id="playBtn" onclick="doDecryptPlay()" disabled>
+        Decrypt &amp; Play
+      </button>
+    </div>
+
+    <div class="progress-wrap" id="playProgress">
+      <div class="progress-label"><span id="playProgressLabel">Decrypting…</span><span id="playProgressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-bar" id="playProgressBar"></div></div>
+    </div>
+
+    <div class="status-msg" id="playStatus"></div>
+
+    <!-- ── VIDEO PLAYER ── -->
+    <div class="player-shell" id="playerShell">
+      <div class="video-overlay-top">
+        <div class="video-title" id="videoTitle">—</div>
+        <div class="enc-badge">AES-256-GCM PROTECTED</div>
+      </div>
+
+      <div class="decrypt-overlay" id="decryptOverlay">
+        <div class="decrypt-spinner"></div>
+        <div class="decrypt-label">DECRYPTING STREAM…</div>
+      </div>
+
+      <video id="videoEl" onclick="togglePlay()" preload="auto"></video>
+
+      <div class="controls" id="videoControls">
+        <div class="seek-area" id="seekArea">
+          <div class="seek-track">
+            <div class="seek-buffered" id="seekBuffered"></div>
+            <div class="seek-filled" id="seekFilled"></div>
+            <div class="seek-thumb" id="seekThumb"></div>
+          </div>
+          <div class="seek-tooltip" id="seekTooltip"></div>
+        </div>
+
+        <div class="ctrl-row">
+          <!-- Play / Pause -->
+          <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="togglePlay()" data-tip="Play/Pause (Space)">
+            <svg id="iconPlay" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <svg id="iconPause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+
+          <!-- Stop -->
+          <button class="ctrl-btn" onclick="stopVideo()" data-tip="Stop">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/></svg>
+          </button>
+
+          <!-- Step back -->
+          <button class="ctrl-btn" onclick="skip(-10)" data-tip="–10s">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="11 17 2 12 11 7"/><line x1="22" y1="7" x2="22" y2="17"/>
+            </svg>
+          </button>
+
+          <!-- Step forward -->
+          <button class="ctrl-btn" onclick="skip(10)" data-tip="+10s">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="13 17 22 12 13 7"/><line x1="2" y1="7" x2="2" y2="17"/>
+            </svg>
+          </button>
+
+          <!-- Volume -->
+          <div class="vol-group">
+            <button class="ctrl-btn" id="volBtn" onclick="toggleMute()" data-tip="Mute (M)">
+              <svg id="iconVol" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <svg id="iconMute" viewBox="0 0 24 24" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            </button>
+            <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)">
+          </div>
+
+          <!-- Time -->
+          <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+
+          <div class="ctrl-spacer"></div>
+
+          <!-- Playback speed -->
+          <button class="speed-btn" id="speedBtn" onclick="cycleSpeed()" data-tip="Playback Speed">1×</button>
+
+          <!-- Picture-in-picture -->
+          <button class="ctrl-btn" onclick="togglePiP()" data-tip="Picture in Picture">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><rect x="12" y="11" width="9" height="6" rx="1"/>
+            </svg>
+          </button>
+
+          <!-- Fullscreen -->
+          <button class="ctrl-btn" id="fsBtn" onclick="toggleFullscreen()" data-tip="Fullscreen (F)">
+            <svg id="iconExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <svg id="iconCompress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+            </svg>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="info-strip" id="infoStrip" style="display:none">
+      <div class="info-item"><div class="info-dot"></div><span id="infoCodec">—</span></div>
+      <div class="info-item"><div class="info-dot"></div><span id="infoSize">—</span></div>
+      <div class="info-item"><div class="info-dot"></div><span id="infoDur">—</span></div>
+      <div class="info-item"><div class="info-dot"></div><span>AES-256-GCM</span></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let encFile = null;
+let playEncFile = null;
+let playKey = null;
+let currentKey = null;
+let currentKeyRaw = null;
+let encryptedBlob = null;
+let videoBlob = null;
+let videoURL = null;
+const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+let speedIdx = 3;
+let isSeeking = false;
+
+// ═══════════════════════════════════════════════
+//  TAB
+// ═══════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['encrypt','play'][i] === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  DRAG & DROP
+// ═══════════════════════════════════════════════
+['encDropZone','playDropZone','keyDropZone'].forEach(id => {
+  const z = document.getElementById(id);
+  if (!z) return;
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('drag'); });
+  z.addEventListener('dragleave', () => z.classList.remove('drag'));
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.classList.remove('drag');
+    const input = z.querySelector('input[type=file]');
+    if (input && e.dataTransfer.files.length) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════
+//  FILE HANDLERS
+// ═══════════════════════════════════════════════
+function handleEncFile(input) {
+  if (!input.files[0]) return;
+  encFile = input.files[0];
+  const el = document.getElementById('encFileName');
+  el.style.display = 'block';
+  el.textContent = `${encFile.name}  ·  ${formatSize(encFile.size)}`;
+  document.getElementById('encBtn').disabled = false;
+}
+
+function handlePlayFile(input) {
+  if (!input.files[0]) return;
+  playEncFile = input.files[0];
+  const el = document.getElementById('playFileName');
+  el.style.display = 'block';
+  el.textContent = `${playEncFile.name}  ·  ${formatSize(playEncFile.size)}`;
+  checkPlayReady();
+}
+
+function handleKeyFile(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('playKeyInput').value = e.target.result.trim();
+    checkPlayReady();
+  };
+  reader.readAsText(input.files[0]);
+}
+
+function checkPlayReady() {
+  const hasFile = !!playEncFile;
+  const hasKey = document.getElementById('playKeyInput').value.trim().length > 0;
+  document.getElementById('playBtn').disabled = !(hasFile && hasKey);
+}
+document.getElementById('playKeyInput').addEventListener('input', checkPlayReady);
+
+// ═══════════════════════════════════════════════
+//  CRYPTO HELPERS
+// ═══════════════════════════════════════════════
+async function deriveKey(passphrase, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function generateKey() {
+  return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+}
+
+async function importKey(b64) {
+  const raw = base64ToBuffer(b64);
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['decrypt']);
+}
+
+function bufferToBase64(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+function base64ToBuffer(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+// ═══════════════════════════════════════════════
+//  ENCRYPT
+// ═══════════════════════════════════════════════
+async function doEncrypt() {
+  if (!encFile) return;
+  const passphrase = document.getElementById('encPassInput').value.trim();
+  hideStatus('encStatus');
+  document.getElementById('keyDisplay').style.display = 'none';
+  document.getElementById('dlList').style.display = 'none';
+  showProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct');
+
+  try {
+    setProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct', 5, 'Reading file…');
+    const arrayBuf = await encFile.arrayBuffer();
+
+    setProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct', 20, 'Generating key…');
+
+    let cryptoKey, keyB64, salt = null;
+    if (passphrase.length > 0) {
+      salt = crypto.getRandomValues(new Uint8Array(16));
+      cryptoKey = await deriveKey(passphrase, salt);
+      const raw = await crypto.subtle.exportKey('raw', cryptoKey);
+      keyB64 = bufferToBase64(raw);
+    } else {
+      cryptoKey = await generateKey();
+      const raw = await crypto.subtle.exportKey('raw', cryptoKey);
+      keyB64 = bufferToBase64(raw);
+    }
+    currentKey = keyB64;
+    currentKeyRaw = cryptoKey;
+
+    setProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct', 50, 'Encrypting…');
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, arrayBuf);
+
+    setProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct', 85, 'Building container…');
+
+    // Build .encvid container: [MAGIC 8B][VERSION 1B][IV 12B][SALT_FLAG 1B][SALT? 16B][DATA]
+    const magic = new TextEncoder().encode('VAULTPLY');
+    const version = new Uint8Array([1]);
+    const saltFlag = new Uint8Array([salt ? 1 : 0]);
+    const parts = [magic, version, iv, saltFlag];
+    if (salt) parts.push(salt);
+    parts.push(new Uint8Array(encrypted));
+    const totalLen = parts.reduce((s, p) => s + p.byteLength, 0);
+    const container = new Uint8Array(totalLen);
+    let offset = 0;
+    for (const p of parts) { container.set(p, offset); offset += p.byteLength; }
+
+    encryptedBlob = new Blob([container], { type: 'application/octet-stream' });
+    const encName = encFile.name.replace(/\.mp4$/i, '') + '.encvid';
+
+    setProgress('encProgress', 'encProgressBar', 'encProgressLabel', 'encProgressPct', 100, 'Done!');
+
+    // Show key
+    document.getElementById('keyValue').textContent = keyB64;
+    document.getElementById('keyDisplay').style.display = 'block';
+
+    // Download list
+    const dlList = document.getElementById('dlList');
+    dlList.style.display = 'flex';
+    dlList.innerHTML = makeDlItem('ENC', encName, formatSize(encryptedBlob.size), () => downloadEncrypted(encName)) +
+                       makeDlItem('KEY', encFile.name.replace(/\.mp4$/i, '') + '.vaultkey', '—', downloadKey);
+    dlList.querySelectorAll('button').forEach((btn, i) => {
+      btn.onclick = i === 0 ? () => downloadEncrypted(encName) : downloadKey;
+    });
+
+    showStatus('encStatus', 'success', `Encrypted successfully · ${formatSize(encFile.size)} → ${formatSize(encryptedBlob.size)}`);
+    setTimeout(() => hideProgress('encProgress'), 1000);
+  } catch (err) {
+    showStatus('encStatus', 'error', 'Encryption failed: ' + err.message);
+    hideProgress('encProgress');
+  }
+}
+
+function makeDlItem(badge, name, size, fn) {
+  return `<div class="dl-item">
+    <div class="dl-item-info">
+      <div class="dl-badge">${badge}</div>
+      <div><div class="dl-name">${name}</div><div class="dl-size">${size}</div></div>
+    </div>
+    <button class="btn btn-outline" style="font-size:11px;padding:8px 18px;">Download</button>
+  </div>`;
+}
+
+function downloadEncrypted(name) {
+  if (!encryptedBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(encryptedBlob);
+  a.download = name;
+  a.click();
+}
+
+function downloadKey() {
+  if (!currentKey) return;
+  const blob = new Blob([currentKey], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (encFile ? encFile.name.replace(/\.mp4$/i,'') : 'video') + '.vaultkey';
+  a.click();
+}
+
+function copyKey() {
+  if (!currentKey) return;
+  navigator.clipboard.writeText(currentKey).then(() => showStatus('encStatus','info','Key copied to clipboard.'));
+}
+
+// ═══════════════════════════════════════════════
+//  DECRYPT & PLAY
+// ═══════════════════════════════════════════════
+async function doDecryptPlay() {
+  if (!playEncFile) return;
+  const keyStr = document.getElementById('playKeyInput').value.trim();
+  if (!keyStr) return;
+  hideStatus('playStatus');
+  showProgress('playProgress', 'playProgressBar', 'playProgressLabel', 'playProgressPct');
+
+  // Show player shell and overlay
+  const shell = document.getElementById('playerShell');
+  shell.style.display = 'block';
+  const overlay = document.getElementById('decryptOverlay');
+  overlay.style.display = 'flex';
+
+  try {
+    setProgress('playProgress','playProgressBar','playProgressLabel','playProgressPct', 10, 'Reading container…');
+    const arrayBuf = await playEncFile.arrayBuffer();
+    const data = new Uint8Array(arrayBuf);
+
+    // Parse magic
+    const magic = new TextDecoder().decode(data.slice(0, 8));
+    if (magic !== 'VAULTPLY') throw new Error('Invalid .encvid file — magic mismatch.');
+    // version = data[8], iv starts at 9
+    const iv = data.slice(9, 21);
+    const saltFlag = data[21];
+    let encStart = 22;
+    let salt = null;
+    if (saltFlag === 1) { salt = data.slice(22, 38); encStart = 38; }
+    const cipherData = data.slice(encStart);
+
+    setProgress('playProgress','playProgressBar','playProgressLabel','playProgressPct', 35, 'Importing key…');
+
+    let cryptoKey;
+    // Try as raw base64 key first
+    try {
+      cryptoKey = await importKey(keyStr);
+    } catch {
+      // Treat as passphrase — need salt
+      if (!salt) throw new Error('Passphrase provided but file has no salt. Use the raw key.');
+      cryptoKey = await deriveKey(keyStr, salt);
+    }
+
+    setProgress('playProgress','playProgressBar','playProgressLabel','playProgressPct', 60, 'Decrypting…');
+    let decrypted;
+    try {
+      decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, cipherData);
+    } catch {
+      throw new Error('Decryption failed — wrong key or corrupted file.');
+    }
+
+    setProgress('playProgress','playProgressBar','playProgressLabel','playProgressPct', 90, 'Loading video…');
+
+    if (videoURL) URL.revokeObjectURL(videoURL);
+    videoBlob = new Blob([decrypted], { type: 'video/mp4' });
+    videoURL = URL.createObjectURL(videoBlob);
+
+    const vid = document.getElementById('videoEl');
+    vid.src = videoURL;
+    vid.load();
+
+    setProgress('playProgress','playProgressBar','playProgressLabel','playProgressPct', 100, 'Ready!');
+    overlay.style.display = 'none';
+
+    // Info strip
+    const fname = playEncFile.name.replace(/\.encvid$/i, '.mp4');
+    document.getElementById('videoTitle').textContent = fname;
+    document.getElementById('infoSize').textContent = formatSize(videoBlob.size);
+    document.getElementById('infoCodec').textContent = 'MP4 · H.264';
+
+    vid.onloadedmetadata = () => {
+      const d = vid.duration;
+      document.getElementById('infoDur').textContent = isFinite(d) ? formatTime(d) + ' total' : '—';
+      updateTimeDisplay();
+    };
+
+    document.getElementById('infoStrip').style.display = 'flex';
+    showStatus('playStatus', 'success', `Decrypted · ${formatSize(videoBlob.size)} in memory · ready to play`);
+    setTimeout(() => hideProgress('playProgress'), 1500);
+    vid.play().catch(() => {});
+
+  } catch(err) {
+    overlay.style.display = 'none';
+    shell.style.display = 'none';
+    showStatus('playStatus', 'error', err.message);
+    hideProgress('playProgress');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  VIDEO CONTROLS
+// ═══════════════════════════════════════════════
+const vid = document.getElementById('videoEl');
+
+function togglePlay() {
+  if (vid.paused) vid.play(); else vid.pause();
+}
+function stopVideo() {
+  vid.pause(); vid.currentTime = 0;
+}
+function skip(s) { vid.currentTime = Math.max(0, Math.min(vid.duration || 0, vid.currentTime + s)); }
+function setVolume(v) { vid.volume = v; if (v == 0) setMuteIcons(true); else setMuteIcons(false); }
+function toggleMute() { vid.muted = !vid.muted; setMuteIcons(vid.muted); }
+function setMuteIcons(m) {
+  document.getElementById('iconVol').style.display = m ? 'none' : '';
+  document.getElementById('iconMute').style.display = m ? '' : 'none';
+}
+
+function cycleSpeed() {
+  speedIdx = (speedIdx + 1) % speeds.length;
+  vid.playbackRate = speeds[speedIdx];
+  const label = speeds[speedIdx];
+  document.getElementById('speedBtn').textContent = (label === 1 ? '1' : label) + '×';
+}
+
+async function togglePiP() {
+  if (document.pictureInPictureElement) {
+    await document.exitPictureInPicture().catch(() => {});
+  } else {
+    await vid.requestPictureInPicture().catch(() => {});
+  }
+}
+
+function toggleFullscreen() {
+  const shell = document.getElementById('playerShell');
+  if (!document.fullscreenElement) {
+    shell.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const full = !!document.fullscreenElement;
+  document.getElementById('iconExpand').style.display = full ? 'none' : '';
+  document.getElementById('iconCompress').style.display = full ? '' : 'none';
+});
+
+vid.addEventListener('play', () => {
+  document.getElementById('iconPlay').style.display = 'none';
+  document.getElementById('iconPause').style.display = '';
+});
+vid.addEventListener('pause', () => {
+  document.getElementById('iconPlay').style.display = '';
+  document.getElementById('iconPause').style.display = 'none';
+});
+vid.addEventListener('ended', () => {
+  document.getElementById('iconPlay').style.display = '';
+  document.getElementById('iconPause').style.display = 'none';
+});
+
+// Time update
+vid.addEventListener('timeupdate', () => {
+  if (!isSeeking) updateSeekBar();
+  updateTimeDisplay();
+});
+vid.addEventListener('progress', updateBuffered);
+
+function updateTimeDisplay() {
+  const c = vid.currentTime || 0, d = vid.duration;
+  document.getElementById('timeDisplay').textContent = formatTime(c) + ' / ' + (isFinite(d) ? formatTime(d) : '—');
+}
+function updateSeekBar() {
+  const pct = vid.duration ? (vid.currentTime / vid.duration) * 100 : 0;
+  document.getElementById('seekFilled').style.width = pct + '%';
+  document.getElementById('seekThumb').style.left = pct + '%';
+}
+function updateBuffered() {
+  if (vid.buffered.length > 0) {
+    const pct = (vid.buffered.end(vid.buffered.length - 1) / (vid.duration || 1)) * 100;
+    document.getElementById('seekBuffered').style.width = pct + '%';
+  }
+}
+
+// Seek interactions
+const seekArea = document.getElementById('seekArea');
+function seekTo(e) {
+  const rect = seekArea.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (isFinite(vid.duration)) {
+    vid.currentTime = pct * vid.duration;
+    document.getElementById('seekFilled').style.width = (pct * 100) + '%';
+    document.getElementById('seekThumb').style.left = (pct * 100) + '%';
+  }
+}
+seekArea.addEventListener('mousedown', e => { isSeeking = true; seekTo(e); });
+document.addEventListener('mousemove', e => { if (isSeeking) seekTo(e); });
+document.addEventListener('mouseup', () => { isSeeking = false; });
+
+// Tooltip
+seekArea.addEventListener('mousemove', e => {
+  const rect = seekArea.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const tip = document.getElementById('seekTooltip');
+  tip.style.display = 'block';
+  tip.style.left = (pct * 100) + '%';
+  tip.textContent = isFinite(vid.duration) ? formatTime(pct * vid.duration) : '';
+});
+seekArea.addEventListener('mouseleave', () => { document.getElementById('seekTooltip').style.display = 'none'; });
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (!videoURL) return;
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight') skip(5);
+  if (e.code === 'ArrowLeft') skip(-5);
+  if (e.code === 'ArrowUp') { vid.volume = Math.min(1, vid.volume + 0.1); document.getElementById('volSlider').value = vid.volume; }
+  if (e.code === 'ArrowDown') { vid.volume = Math.max(0, vid.volume - 0.1); document.getElementById('volSlider').value = vid.volume; }
+  if (e.code === 'KeyM') toggleMute();
+  if (e.code === 'KeyF') toggleFullscreen();
+});
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function formatTime(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+function formatSize(b) {
+  if (b > 1e9) return (b/1e9).toFixed(2) + ' GB';
+  if (b > 1e6) return (b/1e6).toFixed(2) + ' MB';
+  if (b > 1e3) return (b/1e3).toFixed(1) + ' KB';
+  return b + ' B';
+}
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status-msg ' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
+function showProgress(pid, bid, lid, pctid) { document.getElementById(pid).style.display = 'block'; setProgress(pid,bid,lid,pctid,0,'Starting…'); }
+function hideProgress(pid) { document.getElementById(pid).style.display = 'none'; }
+function setProgress(pid, bid, lid, pctid, pct, label) {
+  document.getElementById(bid).style.width = pct + '%';
+  document.getElementById(lid).textContent = label;
+  document.getElementById(pctid).textContent = Math.round(pct) + '%';
+}
+
+// Re-wire dl-list buttons after innerHTML set
+document.getElementById('dlList').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const items = document.getElementById('dlList').querySelectorAll('.dl-item');
+  items.forEach((item, i) => {
+    if (item.contains(btn)) {
+      if (i === 0 && encryptedBlob) {
+        const name = item.querySelector('.dl-name').textContent;
+        downloadEncrypted(name);
+      } else if (i === 1) {
+        downloadKey();
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
